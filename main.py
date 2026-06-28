@@ -24,6 +24,12 @@ async def index() -> FileResponse:
     return FileResponse(ROOT / "static" / "index.html")
 
 
+@app.get("/favicon.svg", include_in_schema=False)
+async def favicon() -> FileResponse:
+    """ブラウザタブ用のファビコンを返す。"""
+    return FileResponse(ROOT / "static" / "favicon.svg", media_type="image/svg+xml")
+
+
 @app.get("/health")
 async def health() -> JSONResponse:
     """Render 等の死活監視用エンドポイント。"""

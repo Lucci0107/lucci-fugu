@@ -1,0 +1,19 @@
+[project]
+name = "lucci-fugu"
+version = "0.1.0"
+description = "複数AIを役割分担させる、るっち版Fugu"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.115.0",
+  "httpx>=0.28.0",
+  "openai-agents>=0.4.0",
+  "pydantic>=2.10.0",
+  "python-dotenv>=1.0.1",
+  "uvicorn[standard]>=0.34.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+
+[tool.setuptools]
+packages = ["app"]

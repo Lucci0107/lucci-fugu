@@ -1,0 +1,27 @@
+{
+  "gpt-5.4-mini": {
+    "input_usd_per_million": 0.75,
+    "cached_input_usd_per_million": 0.075,
+    "output_usd_per_million": 4.5
+  },
+  "claude-haiku-4-5-20251001": {
+    "input_usd_per_million": 1.0,
+    "cached_input_usd_per_million": 0.1,
+    "output_usd_per_million": 5.0
+  },
+  "claude-sonnet-4-5-20250929": {
+    "input_usd_per_million": 3.0,
+    "cached_input_usd_per_million": 0.3,
+    "output_usd_per_million": 15.0
+  },
+  "gemini-2.5-flash-lite": {
+    "input_usd_per_million": 0.1,
+    "cached_input_usd_per_million": 0.01,
+    "output_usd_per_million": 0.4
+  },
+  "grok-4.3": {
+    "input_usd_per_million": 1.25,
+    "cached_input_usd_per_million": 0.2,
+    "output_usd_per_million": 2.5
+  }
+}

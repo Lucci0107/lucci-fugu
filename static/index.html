@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>るっちFugu</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-theme="dark">
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="るっちFugu ホーム"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="19" fill="#EF5A4F"/><path d="M10 21c4-7 14-9 20-3l3-3v11l-3-3c-6 6-16 4-20-2Z" fill="#FFE3A8"/><circle cx="18" cy="19" r="1.6" fill="#132235"/><path d="M12 27c3 2 12 4 17-1" stroke="#FFF7E8" stroke-width="1.5" stroke-linecap="round"/></svg></span><span>るっちFugu</span></a>
+    <nav>
+      <a class="active" data-action="dashboard" href="#workspace"><span class="nav-icon">⌘</span>AIチーム司令室</a>
+      <a data-action="projects" href="#"><span class="nav-icon">▱</span>プロジェクト</a>
+      <a data-action="history" href="#"><span class="nav-icon">◷</span>履歴</a>
+      <a data-action="templates" href="#"><span class="nav-icon">▤</span>テンプレート</a>
+      <a data-action="agents" href="#"><span class="nav-icon">♙</span>エージェント</a>
+      <a data-action="n8n" href="#"><span class="nav-icon">⌁</span>n8n連携</a>
+      <a data-action="costs" href="#"><span class="nav-icon">ϟ</span>API料金</a>
+      <a data-action="settings" href="#"><span class="nav-icon">⚙</span>設定</a>
+    </nav>
+    <div class="side-bottom">ドキュメント<br>サポート<hr>るっちFuguユーザー</div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <div><h1>AIチーム司令室</h1><span class="team-state">チーム待機中</span></div>
+      <div class="topbar-actions">
+        <div class="cost-pill"><small>概算（USD）</small><b id="header-cost">$0.00</b></div>
+        <select id="history-select" class="outline"><option value="">履歴を呼び出す</option></select>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="表示テーマを切り替える"><svg class="theme-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.7"/><path d="M12 2.5v2M12 19.5v2M21.5 12h-2M4.5 12h-2M18.7 5.3l-1.4 1.4M6.7 17.3l-1.4 1.4M18.7 18.7l-1.4-1.4M6.7 6.7 5.3 5.3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><svg class="theme-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 15.4A8 8 0 1 1 8.6 4 6.5 6.5 0 0 0 20 15.4Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg><span>ライト表示</span></button>
+        <button id="new-project" class="dark"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 4.5h9l5 5V20H5V4.5Z" stroke="currentColor" stroke-width="1.7"/><path d="M14 4.5v5h5M12 12v5M9.5 14.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><span>新しいプロジェクト</span></button>
+      </div>
+    </header>
+
+    <div id="workspace" class="workspace-grid">
+      <section class="workspace-main">
+        <form id="run-form" class="composer">
+          <div class="input-block">
+            <label for="goal"><span class="field-icon goal-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="19" fill="#EF5A4F"/><circle cx="20" cy="20" r="10" stroke="white" stroke-width="2"/><circle cx="20" cy="20" r="4" stroke="white" stroke-width="2"/><path d="m27 13 4-4" stroke="white" stroke-width="2" stroke-linecap="round"/></svg></span><span>制作の目的</span></label>
+            <input id="goal" maxlength="300" placeholder="例）新サービスの認知拡大のため、共感される紹介投稿を作りたい">
+          </div>
+          <div class="input-block">
+            <label for="brief"><span class="field-icon brief-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><circle cx="20" cy="20" r="19" fill="#2AA6AA"/><path d="M13 10h14v20H13z" stroke="white" stroke-width="2" stroke-linejoin="round"/><path d="M16 16h8M16 20h8M16 24h6" stroke="white" stroke-width="2" stroke-linecap="round"/></svg></span><span>依頼内容</span></label>
+            <textarea id="brief" required minlength="10" placeholder="例）&#10;・ターゲット：20〜30代の働く女性&#10;・サービス：時短家事アプリ「るっちタイム」&#10;・伝えたい価値：スキマ時間で家事が整う、心にゆとりが生まれる&#10;・トーン：やさしく、共感ベースで&#10;・参考情報やURLがあれば記載してください"></textarea>
+            <small>目的・背景・伝えたいことを、自由に書いてください。</small>
+          </div>
+          <div class="composer-footer"><button type="submit" class="launch">チームを動かす</button></div>
+        </form>
+
+        <section id="team" class="pipeline"><h2>AIチームの流れ</h2><div id="steps"></div></section>
+
+        <section id="results" class="deliverables">
+          <div class="section-heading"><h2>成果物（デリバブル）</h2><span>実行後にここへ集約されます</span></div>
+          <p id="empty">最初の依頼を出すと、ここに成果物が並びます。</p>
+          <div id="outputs"></div>
+        </section>
+      </section>
+
+      <aside class="workspace-inspector">
+        <section id="n8n" class="inspector-panel n8n-panel">
+          <h2>n8n連携状況</h2>
+          <p>実行後に自動送信する設定です。オンのときだけ、成果物をn8nへ送信します。</p>
+          <button type="button" data-action="n8n">n8n連携を設定</button>
+          <small id="n8n-status">n8nへの自動送信はオフです。</small>
+        </section>
+
+        <section class="inspector-panel cost-summary">
+          <h2>API料金（概算）</h2>
+          <p id="run-cost">今回の実行後に、概算料金を表示します。</p>
+          <small>標準トークン単価に基づく概算です。</small>
+        </section>
+
+        <section class="conversation inspector-panel">
+          <div class="conversation-title"><h2>チームの会話</h2><span>リアルタイム</span></div>
+          <ol id="activity"><li>依頼を受け取ると、担当者がここで動き出します。</li></ol>
+          <div class="message">チームにメッセージを送る</div>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <dialog id="app-dialog"><div class="dialog-head"><h2 id="dialog-title"></h2><button id="dialog-close">閉じる</button></div><div id="dialog-body"></div></dialog>
+  <template id="step-template"><article class="step"><b></b><i></i><strong></strong><small>未開始</small></article></template>
+  <script src="/static/app.js"></script>
+</body>
+</html>

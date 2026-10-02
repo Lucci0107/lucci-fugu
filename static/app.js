@@ -78,7 +78,8 @@ async function persistUserSettings() {
   localStorage.setItem("rucchi-fugu-n8n-enabled", String(n8nEnabled));
   localStorage.setItem("rucchi-fugu-xai-live-search", String(xaiLiveSearch));
   localStorage.setItem("rucchi-fugu-custom-templates", JSON.stringify(customTemplates));
-  await fetch("/api/user-settings", {method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const response = await fetch("/api/user-settings", {method: "PUT", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  if (!response.ok) throw new Error("設定を保存できませんでした。");
 }
 fetch("/api/user-settings").then((response) => response.json()).then((saved) => {
   Object.assign(selectedProviders, saved.providers || {});
@@ -86,6 +87,7 @@ fetch("/api/user-settings").then((response) => response.json()).then((saved) => 
   if (typeof saved.n8n_enabled === "boolean") n8nEnabled = saved.n8n_enabled;
   if (typeof saved.xai_live_search === "boolean") xaiLiveSearch = saved.xai_live_search;
   if (Array.isArray(saved.custom_templates)) customTemplates = saved.custom_templates;
+  status.textContent = n8nEnabled ? "n8nへの自動送信はオンです。" : "n8nへの自動送信はオフです。";
 }).catch(() => {});
 fetch("/api/costs").then((response) => response.json()).then((costs) => {
   document.querySelector("#header-cost").textContent = formatUsd(costs.monthly_total_usd);
@@ -131,7 +133,9 @@ function readAgentsFromDialog() {
     instructions: row.querySelector("[data-template-agent-instructions]").value.trim(),
   }));
 }
+let editingTemplateId = "";
 function openTemplateEditor(template = {id: "", name: "", goal: "", brief: "", agents: [{role: "リサーチ", provider: "openai", instructions: "依頼内容を整理し、必要な情報と論点をまとめる。"}]}) {
+  editingTemplateId = template.id;
   openDialog(template.id ? "テンプレートを編集" : "新しいテンプレート", `<div class="template-form"><label>テンプレート名<input data-template-name maxlength="80" value="${escapeHtml(template.name)}" placeholder="例：メルマガ原稿"></label><label>制作の目的<input data-template-goal maxlength="300" value="${escapeHtml(template.goal)}" placeholder="例：週刊メルマガを作る"></label><label>依頼内容の初期文<textarea data-template-brief required minlength="10" maxlength="8000" placeholder="テンプレートを選んだ時に入れる依頼文">${escapeHtml(template.brief)}</textarea></label><label>AIチーム<small>担当名・使用AI・担当指示を自由に設定できます。</small></label><div data-template-agent-list>${template.agents.map(templateAgentEditor).join("")}</div><div class="template-actions"><button type="button" data-add-template-agent>＋ 担当を追加</button><button type="button" data-save-template="${escapeHtml(template.id)}">テンプレートを保存</button></div><p class="template-form-message" id="template-form-message"></p></div>`);
 }
 function openTemplatesDialog() {
@@ -165,21 +169,21 @@ document.querySelectorAll("[data-action]").forEach((link) => link.addEventListen
   if (action === "history") { const projectId = localStorage.getItem("rucchi-fugu-current-project"); const projectHistory = history.filter((item) => !projectId || item.projectId === projectId); return openDialog("実行履歴", projectHistory.length ? projectHistory.map((item) => `<button class="dialog-item" data-history="${history.indexOf(item)}">${new Date(item.createdAt || 0).toLocaleString("ja-JP")}　${escapeHtml((item.brief || "").slice(0, 42))}</button>`).join("") : "<p>このプロジェクトの実行履歴はありません。</p>"); }
   if (action === "templates") return openTemplatesDialog();
   if (action === "agents") return openAgentsDialog();
-  if (action === "n8n") { const saved = await fetch("/api/user-settings").then((response) => response.json()).catch(() => ({})); if (typeof saved.n8n_enabled === "boolean") n8nEnabled = saved.n8n_enabled; return openDialog("n8n連携", `<p>${escapeHtml(status.textContent)}</p><label class="agent-row"><b>実行後に自動送信</b><input type="checkbox" data-n8n-toggle ${n8nEnabled ? "checked" : ""}></label><p>オンにした場合だけ、次回実行の成果物をn8nへ送信します。</p><button class="dialog-item" data-save-n8n>設定を保存</button><small id="n8n-save-result"></small>`); }
+  if (action === "n8n") { const saved = await fetch("/api/user-settings").then((response) => response.json()).catch(() => ({})); if (typeof saved.n8n_enabled === "boolean") n8nEnabled = saved.n8n_enabled; return openDialog("n8n連携", `<p>n8nへの自動送信は${n8nEnabled ? "オン" : "オフ"}です。</p><label class="agent-row"><b>実行後に自動送信</b><input type="checkbox" data-n8n-toggle ${n8nEnabled ? "checked" : ""}></label><p>オンにした場合だけ、次回実行の成果物をn8nへ送信します。</p><button class="dialog-item" data-save-n8n>設定を保存</button><small id="n8n-save-result"></small>`); }
   if (action === "costs") { const costs = await fetch("/api/costs").then((response) => response.json()); const providers = Object.entries(costs.provider_totals_usd || {}).map(([provider, amount]) => `<div><b>${escapeHtml({openai: "ChatGPT", anthropic: "Claude", gemini: "Gemini", xai: "Grok"}[provider] || provider)}</b><span>${formatUsd(amount)}</span></div>`).join("") || "<p>まだ概算料金の記録はありません。</p>"; return openDialog("API料金（概算）", `<p>当月合計（${escapeHtml(costs.month || "")}）：<b>${formatUsd(costs.monthly_total_usd)}</b></p><p>AI別の累計料金</p><div class="cost-list">${providers}</div><small>各社の標準トークン単価を使用した概算です。実際の請求額ではありません。</small>`); }
-  if (action === "settings") { const health = await fetch("/health").then((response) => response.json()); return openDialog("接続設定", `<p>ChatGPT：接続済み</p><p>Claude：${health.providers.anthropic ? "設定済み" : "未設定"}</p><p>Gemini：${health.providers.gemini ? "設定済み" : "未設定"}</p><p>Grok：${health.providers.xai ? `設定済み（${escapeHtml(health.models.xai)}）` : "未設定"}</p>`); }
+  if (action === "settings") { const health = await fetch("/health").then((response) => response.json()); return openDialog("接続設定", `<p>ChatGPT：${health.providers.openai ? "設定済み" : "未設定"}</p><p>Claude：${health.providers.anthropic ? "設定済み" : "未設定"}</p><p>Gemini：${health.providers.gemini ? "設定済み" : "未設定"}</p><p>Grok：${health.providers.xai ? `設定済み（${escapeHtml(health.models.xai)}）` : "未設定"}</p>`); }
 }));
 
 dialogBody.addEventListener("click", (event) => {
   const button = event.target.closest("button"); if (!button) return;
-  if (button.dataset.saveN8n !== undefined) { persistUserSettings().then(() => { document.querySelector("#n8n-save-result").textContent = "保存しました"; }); return; }
+  if (button.dataset.saveN8n !== undefined) { persistUserSettings().then(() => { status.textContent = n8nEnabled ? "n8nへの自動送信はオンです。" : "n8nへの自動送信はオフです。"; document.querySelector("#n8n-save-result").textContent = "保存しました"; }).catch(() => { document.querySelector("#n8n-save-result").textContent = "保存できませんでした。再試行してください。"; }); return; }
   if (button.dataset.templateNew !== undefined) return openTemplateEditor();
   if (button.dataset.templateCopy !== undefined) { const source = builtInTemplates.find((template) => template.id === button.dataset.templateCopy); return openTemplateEditor({...source, id: "", name: `${source.name}（コピー）`, agents: cloneAgents(presetAgents[source.id])}); }
   if (button.dataset.templateEdit !== undefined) { const template = customTemplates.find((item) => item.id === button.dataset.templateEdit); if (template) openTemplateEditor(template); return; }
   if (button.dataset.templateDelete !== undefined) { if (window.confirm("このテンプレートを削除しますか？")) { customTemplates = customTemplates.filter((item) => item.id !== button.dataset.templateDelete); persistUserSettings().then(openTemplatesDialog); } return; }
   if (button.dataset.templateUse !== undefined) { const id = button.dataset.templateUse; if (id.startsWith("custom:")) { const template = customTemplates.find((item) => item.id === id.slice(7)); if (template) applyTemplate(template, true); } else { const template = builtInTemplates.find((item) => item.id === id); if (template) applyTemplate(template); } dialog.close(); return; }
-  if (button.dataset.addTemplateAgent !== undefined) { const draft = {id: "", name: dialogBody.querySelector("[data-template-name]").value, goal: dialogBody.querySelector("[data-template-goal]").value, brief: dialogBody.querySelector("[data-template-brief]").value, agents: [...readAgentsFromDialog(), {role: "", provider: "openai", instructions: ""}]}; return openTemplateEditor(draft); }
-  if (button.dataset.removeTemplateAgent !== undefined) { const draft = {id: "", name: dialogBody.querySelector("[data-template-name]").value, goal: dialogBody.querySelector("[data-template-goal]").value, brief: dialogBody.querySelector("[data-template-brief]").value, agents: readAgentsFromDialog()}; const index = [...dialogBody.querySelectorAll("[data-remove-template-agent]")].indexOf(button); draft.agents.splice(index, 1); return openTemplateEditor(draft); }
+  if (button.dataset.addTemplateAgent !== undefined) { const draft = {id: editingTemplateId, name: dialogBody.querySelector("[data-template-name]").value, goal: dialogBody.querySelector("[data-template-goal]").value, brief: dialogBody.querySelector("[data-template-brief]").value, agents: [...readAgentsFromDialog(), {role: "", provider: "openai", instructions: ""}]}; return openTemplateEditor(draft); }
+  if (button.dataset.removeTemplateAgent !== undefined) { const draft = {id: editingTemplateId, name: dialogBody.querySelector("[data-template-name]").value, goal: dialogBody.querySelector("[data-template-goal]").value, brief: dialogBody.querySelector("[data-template-brief]").value, agents: readAgentsFromDialog()}; const index = [...dialogBody.querySelectorAll("[data-remove-template-agent]")].indexOf(button); draft.agents.splice(index, 1); return openTemplateEditor(draft); }
   if (button.dataset.saveTemplate !== undefined) {
     const template = {id: button.dataset.saveTemplate || crypto.randomUUID(), name: dialogBody.querySelector("[data-template-name]").value.trim(), goal: dialogBody.querySelector("[data-template-goal]").value.trim(), brief: dialogBody.querySelector("[data-template-brief]").value.trim(), agents: readAgentsFromDialog()};
     const message = document.querySelector("#template-form-message");
@@ -195,7 +199,7 @@ dialogBody.addEventListener("click", (event) => {
 dialogBody.addEventListener("change", (event) => {
   if (event.target.dataset.agentRole) { selectedProviders[event.target.dataset.agentRole] = event.target.value; persistUserSettings(); openAgentsDialog(); }
   if (event.target.dataset.agentModel) { selectedModels[event.target.dataset.agentModel] = event.target.value; persistUserSettings(); }
-  if (event.target.dataset.n8nToggle) { n8nEnabled = event.target.checked; persistUserSettings(); }
+  if (event.target.dataset.n8nToggle !== undefined) { n8nEnabled = event.target.checked; persistUserSettings(); }
   if (event.target.dataset.xaiLiveSearch !== undefined) { xaiLiveSearch = event.target.checked; persistUserSettings(); }
 });
 document.querySelector("#new-project").addEventListener("click", () => { localStorage.removeItem("rucchi-fugu-current-project"); refreshHistorySelect(); document.querySelector("#goal").value = ""; document.querySelector("#brief").value = ""; outputs.innerHTML = ""; document.querySelector("#empty").hidden = false; activity.innerHTML = "<li>新しいプロジェクトを作成しました。依頼内容を入力してください。</li>"; window.scrollTo({top: 0, behavior: "smooth"}); });

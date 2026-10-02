@@ -6,5 +6,7 @@ __pycache__/
 .venv/
 *.pyc
 *.egg-info/
+build/
+dist/
 data/user_settings.json
 data/*.json

@@ -26,7 +26,7 @@
 | トレース・例外の情報保護 | FAILED | CONFIRMED_COMPLETE | SDKトレース無効化、例外本文をレスポンスに出さないテスト |
 | 変更箇所のBrowser QA | IMPLEMENTED_NEEDS_VALIDATION | CONFIRMED_COMPLETE | 下記のdesktop/mobile操作確認 |
 | Pythonパッケージ構成 | IMPLEMENTED_NEEDS_VALIDATION | CONFIRMED_COMPLETE | 不足していたビルド用setuptools/wheelを仮想環境に追加しwheel作成成功。Renderは従来どおりリポジトリとrequirements.txtから起動 |
-| GitHub Actions | NOT_STARTED | IMPLEMENTED_NEEDS_VALIDATION | テスト・JS構文・依存関係・ビルドを追加。リモート実行結果は別途確認 |
+| GitHub Actions | NOT_STARTED | CONFIRMED_COMPLETE | 修正コミット4857404をPython 3.11で実行し、テスト・JS構文・依存関係・ビルドが成功 |
 | 既存Render公開URL・配信 | IMPLEMENTED_NEEDS_VALIDATION | IMPLEMENTED_NEEDS_VALIDATION | `/health`・`/`・JS・CSS・faviconはHTTP 200。今回の修正はまだ本番へ反映していない |
 | 今回の修正のdeployment / Production QA | BLOCKED | BLOCKED | 先に本人がRenderのEnvironmentへAPP_PASSWORDを登録する必要あり |
 | 各AIの実接続・実生成 / 実n8n送信 | IMPLEMENTED_NEEDS_VALIDATION | IMPLEMENTED_NEEDS_VALIDATION | 有料APIや実Webhookは呼び出していない。検証用応答の成功を実接続成功と扱わない |
@@ -43,7 +43,9 @@
 - `pip wheel . --no-deps --no-build-isolation`: 成功。
 - `git diff --check`: 成功。
 - Starletteのhttpx利用に関する非推奨警告1件。テスト失敗なし。
-- ローカルPythonは3.12。Renderの3.11はGitHub Actionsで確認する構成を追加。
+- ローカルPythonは3.12。GitHub ActionsのPython 3.11でも成功。
+- リモート検証: [成功したCI](https://github.com/Lucci0107/lucci-fugu/actions/runs/37046302122)、コードコミット`4857404`。
+- 保存先: [draft PR #1](https://github.com/Lucci0107/lucci-fugu/pull/1)。mainへの反映と本番公開は認証設定待ち。
 
 ## 画面確認
 

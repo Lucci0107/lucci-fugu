@@ -44,17 +44,26 @@ const defaultModels = {"記事執筆": "claude-sonnet-4-5-20250929", "ステッ�
 const selectedModels = {...defaultModels, ...JSON.parse(localStorage.getItem("rucchi-fugu-model-settings") || "{}")};
 let n8nEnabled = localStorage.getItem("rucchi-fugu-n8n-enabled") === "true";
 let xaiLiveSearch = localStorage.getItem("rucchi-fugu-xai-live-search") === "true";
-const themeToggle = document.querySelector("#theme-toggle");
-const savedTheme = localStorage.getItem("rucchi-fugu-theme") || "dark";
+const themeSelect = document.querySelector("#theme-select");
+const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+const storedTheme = localStorage.getItem("rucchi-fugu-theme");
+let themeChoice = ["light", "dark", "system"].includes(storedTheme) ? storedTheme : "system";
 
-function applyTheme(theme) {
-  document.body.dataset.theme = theme;
-  themeToggle.querySelector("span").textContent = theme === "dark" ? "ライト表示" : "ダーク表示";
-  localStorage.setItem("rucchi-fugu-theme", theme);
+function applyTheme() {
+  document.documentElement.dataset.theme = themeChoice === "system"
+    ? (systemTheme.matches ? "dark" : "light") : themeChoice;
+  themeSelect.value = themeChoice;
 }
 
-applyTheme(savedTheme);
-themeToggle.addEventListener("click", () => applyTheme(document.body.dataset.theme === "dark" ? "light" : "dark"));
+applyTheme();
+themeSelect.addEventListener("change", () => {
+  themeChoice = themeSelect.value;
+  localStorage.setItem("rucchi-fugu-theme", themeChoice);
+  applyTheme();
+});
+systemTheme.addEventListener("change", () => {
+  if (themeChoice === "system") applyTheme();
+});
 
 function escapeHtml(value) {
   return String(value || "").replace(/[&<>'"]/g, (character) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;",'"':"&quot;"})[character]);
@@ -228,7 +237,7 @@ renderSteps();
 function addActivity(message) { const item = document.createElement("li"); item.textContent = message; activity.append(item); }
 
 document.querySelector("#run-form").addEventListener("submit", async (event) => {
-  event.preventDefault(); const button = event.currentTarget.querySelector("button"); button.disabled = true; button.textContent = "チームを稼働中…"; outputs.innerHTML = ""; document.querySelector("#empty").hidden = true; activity.innerHTML = ""; status.textContent = "処理中"; document.querySelectorAll(".step small").forEach((node) => (node.textContent = "待機中")); addActivity("チームを招集しました。順番に成果物を引き継ぎます。");
+  event.preventDefault(); const button = event.currentTarget.querySelector("button[type=submit]"); button.disabled = true; button.textContent = "チームを稼働中…"; outputs.innerHTML = ""; document.querySelector("#empty").hidden = true; activity.innerHTML = ""; status.textContent = "処理中"; document.querySelectorAll(".step small").forEach((node) => (node.textContent = "待機中")); addActivity("チームを招集しました。順番に成果物を引き継ぎます。");
   try {
     const response = await fetch("/api/runs", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({brief: document.querySelector("#brief").value, goal: document.querySelector("#goal").value, providers: selectedProviders, model_overrides: selectedModels, template: selectedTemplate, agents: activeAgents, send_to_n8n: n8nEnabled, xai_live_search: xaiLiveSearch})});
     const data = await response.json(); if (!response.ok || data.status !== "completed") throw new Error(data.n8n?.message || "実行に失敗しました");

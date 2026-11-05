@@ -21,6 +21,10 @@ class Settings:
     n8n_webhook_url: str | None = os.getenv("N8N_WEBHOOK_URL") or None
 
     @property
+    def openai_enabled(self) -> bool:
+        return bool(os.getenv("OPENAI_API_KEY"))
+
+    @property
     def anthropic_enabled(self) -> bool:
         return bool(os.getenv("ANTHROPIC_API_KEY"))
 

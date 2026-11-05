@@ -46,6 +46,12 @@ N8N_WEBHOOK_URL
 
 必須は `OPENAI_API_KEY` です。
 
+公開環境では `APP_PASSWORD` も必須です。RenderのEnvironment画面で、推測されにくい十分な長さのパスワードを本人が登録してください。パスワードはチャット・ソースコード・GitHubへ貼り付けません。
+
+ログイン名は `APP_USERNAME`（未設定時は `lucci`）です。ブラウザで公開URLを開くと認証画面が出ます。Basic認証を使用するため、公開アクセスには必ずHTTPSを使用してください。
+
+既存サービスを更新する場合は、先に `APP_PASSWORD` を登録してから更新を公開してください。Render上でパスワードが未設定の場合、`/health` 以外は503で保護されます。`/health` は監視用に認証不要です。Renderは環境変数 `RENDER=true` を自動設定するため、これで公開環境を判定します（[Render公式ドキュメント](https://render.com/docs/environment-variables)）。
+
 Claude / Gemini / Grok / n8n を使う場合は、それぞれのキーやURLも登録します。
 
 ## 4. 公開後の確認
@@ -61,6 +67,8 @@ https://lucci-fugu.onrender.com/
 ```text
 https://lucci-fugu.onrender.com/health
 ```
+
+死活確認だけではAIの接続成功を保証しません。認証後に画面・静的ファイル・設定保存を確認し、本人のAPI利用許可の範囲で生成とn8n連携を確認してください。
 
 ## 注意
 

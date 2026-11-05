@@ -65,3 +65,56 @@ def test_costs_returns_json() -> None:
     response = TestClient(app).get("/api/costs")
     assert response.status_code == 200
     assert response.json()["label"] == "概算"
+
+
+def test_health_reports_missing_openai_key(monkeypatch) -> None:
+    """接続表示は実際の設定有無と一致する。"""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    assert TestClient(app).get("/health").json()["providers"]["openai"] is False
+
+
+def test_public_app_requires_credentials(monkeypatch) -> None:
+    """画面・API・静的ファイルは認証なしでは利用できない。"""
+    monkeypatch.setenv("APP_PASSWORD", "qa-password")
+    monkeypatch.setenv("APP_USERNAME", "qa-user")
+    with TestClient(app) as client:
+        for path in ("/", "/static/app.js", "/api/user-settings", "/api/costs", "/docs"):
+            response = client.get(path)
+            assert response.status_code == 401
+            assert response.json()["detail"] == "認証が必要です。"
+        assert client.post("/api/runs", json={"brief": "検証用の依頼本文です。"}).status_code == 401
+        assert client.put("/api/user-settings", json={}).status_code == 401
+        assert client.get("/", auth=("qa-user", "wrong-password")).status_code == 401
+        assert client.get("/", auth=("qa-user", "qa-password")).status_code == 200
+        assert client.get("/health").status_code == 200
+
+
+def test_render_without_password_fails_closed(monkeypatch) -> None:
+    """Renderで認証設定が欠けてもAI実行を公開しない。"""
+    monkeypatch.setenv("RENDER", "true")
+    monkeypatch.delenv("APP_PASSWORD", raising=False)
+    with TestClient(app) as client:
+        assert client.get("/api/user-settings").status_code == 503
+        assert client.get("/health").status_code == 200
+
+
+def test_invalid_run_does_not_start_generation(monkeypatch) -> None:
+    """短すぎる依頼は実行前に拒否する。"""
+    monkeypatch.delenv("RENDER", raising=False)
+    monkeypatch.delenv("APP_PASSWORD", raising=False)
+    response = TestClient(app).post("/api/runs", json={"brief": "短文"})
+    assert response.status_code == 422
+
+
+def test_settings_persist_without_touching_user_data(monkeypatch, tmp_path) -> None:
+    """n8nとテンプレート設定を独立した保存先で往復確認する。"""
+    from app import user_settings
+
+    monkeypatch.delenv("RENDER", raising=False)
+    monkeypatch.delenv("APP_PASSWORD", raising=False)
+    monkeypatch.setattr(user_settings, "SETTINGS_PATH", tmp_path / "settings.json")
+    with TestClient(app) as client:
+        assert client.get("/api/user-settings").json() == {}
+        saved = {"n8n_enabled": True, "custom_templates": [{"id": "qa-template"}]}
+        assert client.put("/api/user-settings", json=saved).json() == saved
+        assert client.get("/api/user-settings").json() == saved

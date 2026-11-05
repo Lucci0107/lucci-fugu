@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import os
 import asyncio
-import re
 from dataclasses import dataclass
 from uuid import uuid4
 
 import httpx
-from agents import Agent, Runner
+from agents import Agent, Runner, RunConfig
 
 from app.config import settings
 from app.costs import cost_summary, estimate_usd, save_run_costs
@@ -91,7 +90,7 @@ def _model_for(provider: Provider, model_override: str | None = None) -> str:
 async def _run_openai(role: str, instructions: str, prompt: str) -> GenerationResult:
     """OpenAI Agents SDK で一担当を実行する。"""
     agent = Agent(name=f"るっちFugu・{role}", instructions=instructions, model=settings.openai_model)
-    result = await Runner.run(agent, prompt)
+    result = await Runner.run(agent, prompt, run_config=RunConfig(tracing_disabled=True))
     usage = result.context_wrapper.usage
     cached = getattr(getattr(usage, "input_tokens_details", None), "cached_tokens", 0) or 0
     return GenerationResult(str(result.final_output), usage.input_tokens, usage.output_tokens, cached)
@@ -248,7 +247,7 @@ async def run_team(request: RunRequest) -> RunResponse:
                             break
                         raise RuntimeError(
                             f"{specialist.role}担当（{provider}）で失敗: "
-                            f"{type(error).__name__}: {str(error)[:240]}"
+                            "APIの接続設定と利用状況を確認してください。"
                         ) from error
                     await asyncio.sleep(2 * (attempt + 1))
             else:
@@ -265,9 +264,13 @@ async def run_team(request: RunRequest) -> RunResponse:
             )
             outputs.append(output)
             context += f"\n\n--- {specialist.role} の成果物 ---\n{generation.content}"
-        n8n = await _send_to_n8n({"run_id": run_id, "goal": request.goal, "outputs": [output.model_dump() for output in outputs]}) if request.send_to_n8n else {"sent": False, "message": "送信は要求されていません"}
         save_run_costs(run_id, [output.model_dump(exclude={"role", "content"}) for output in outputs])
+        n8n = {"sent": False, "message": "送信は要求されていません"}
+        if request.send_to_n8n:
+            try:
+                n8n = await _send_to_n8n({"run_id": run_id, "goal": request.goal, "outputs": [output.model_dump() for output in outputs]})
+            except Exception:
+                n8n = {"sent": False, "message": "成果物は生成済みですが、n8nへの送信に失敗しました。接続設定を確認してください。"}
         return RunResponse(run_id=run_id, status="completed", outputs=outputs, n8n=n8n, costs=cost_summary(run_id))
-    except Exception as error:
-        safe_error = re.sub(r"([?&]key=)[^&\s'\"]+", r"\1[REDACTED]", str(error))
-        return RunResponse(run_id=run_id, status="failed", outputs=outputs, n8n={"sent": False, "message": f"実行を停止しました: {safe_error}"}, costs={"label": "概算"})
+    except Exception:
+        return RunResponse(run_id=run_id, status="failed", outputs=outputs, n8n={"sent": False, "message": "実行を停止しました。APIの接続設定、利用状況、n8nの設定を確認してください。"}, costs={"label": "概算"})

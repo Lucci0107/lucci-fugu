@@ -13,6 +13,10 @@ services:
         value: 3.11.9
       - key: OPENAI_API_KEY
         sync: false
+      - key: APP_USERNAME
+        value: lucci
+      - key: APP_PASSWORD
+        sync: false
       - key: OPENAI_MODEL
         value: gpt-5.4-mini
       - key: ANTHROPIC_API_KEY

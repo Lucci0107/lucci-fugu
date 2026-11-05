@@ -41,3 +41,15 @@ Render + GitHub で自動公開できます。
 ```
 
 すべての API レスポンスは JSON です。API キーや依頼本文をアプリケーションログには記録しません。
+
+Renderでは `APP_PASSWORD` によるアクセス認証が必須です。詳しくは [DEPLOY.md](DEPLOY.md) を参照してください。OpenAI Agents SDKのトレース記録は無効化しています。
+
+## 検証
+
+```bash
+uv sync --extra dev
+uv run --extra dev pytest -q
+node --check static/app.js
+```
+
+テストは外部のAI APIやn8nへ送信せず、一時ファイルで設定・料金を検証します。GitHub Actionsも同じ検証を実行します。
